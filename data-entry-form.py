@@ -4,6 +4,23 @@ import sqlite3
 from icecream import ic
 from tkinter.messagebox import showwarning
 
+"""
+This is a tkinter project, for me to learn the basics och tkinter. 
+It is a tutorial project. I got the visual of the data entry form
+from codefirstio's youtube channel. Then I wrote the code with as 
+little help from codefirstio's sourcecode as possible. 
+
+Credit: https://github.com/codefirstio
+Repository: https://github.com/codefirstio/tkinter-data-entry
+Youtube Tutorial: https://youtu.be/vusUfPBsggw
+
+"""
+
+
+
+
+
+
 #Confuguration
 root_window_title = "Data entry form"
 window_height = 350
