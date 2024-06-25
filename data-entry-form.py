@@ -16,11 +16,6 @@ Youtube Tutorial: https://youtu.be/vusUfPBsggw
 
 """
 
-
-
-
-
-
 #Confuguration
 root_window_title = "Data entry form"
 window_height = 350
@@ -71,7 +66,7 @@ def insert_to_database(data_list: list[tuple[str,int,bool]]) -> None:
     #Close the db
     connector.close()
 
-def define_root_window(root_window: tk, root_window_height: int, root_window_width: int, center_root_window : bool = False)-> tk:
+def define_root_window(root_window: tk, root_window_height: int, root_window_width: int, center_root_window : bool = False)-> None:
     """A function to define the root window in this Tkinter app and position the window in the middle of the screen
 
     Arguments:
@@ -142,7 +137,7 @@ root_frame = ttk.Frame(window)
 root_frame.pack()
 
 # User info
-user_info_frame= tk.LabelFrame(master=root_frame, text="User data")
+user_info_frame = tk.LabelFrame(master=root_frame, text="User data")
 user_info_frame.pack(fill="both")
 
 #First name
@@ -199,11 +194,11 @@ reg_checkbox.grid(column=0, row=1 )
 
 # Courses
 courses_label = ttk.Label(master=reg_frame, text="No. Completed Courses").grid(column=1, row=0)
-courses_spinbox = ttk.Spinbox(master=reg_frame, from_=1, to="infinity")
+courses_spinbox = ttk.Spinbox(master=reg_frame, from_=1, to=5000)
 courses_spinbox.grid(column=1, row=1)
 
 semesters_label = ttk.Label(master=reg_frame, text="No. Semester").grid(column=2, row=0)
-semesters_spinbox = ttk.Spinbox(master=reg_frame, from_=1, to="infinity")
+semesters_spinbox = ttk.Spinbox(master=reg_frame, from_=1, to=5000)
 semesters_spinbox.grid(column=2, row=1)
 
 for widget in reg_frame.winfo_children():
