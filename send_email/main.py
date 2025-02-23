@@ -33,10 +33,9 @@ def send_email(recipient_email:str, title:str, body:str)->None:
         
         
 if __name__ == "__main__":
-    recipient_email = "arecius88.mail@gmail.com"
-    title = "Test Email"
-    body = "This is a test email"
-    send_email(recipient_email, title, body)
-    
-    #print(EMAIL_ADRESS)
-    #print(EMAIL_PASSWORD)
+    recipients = ["Ange mailadresser"]
+    for recipient in recipients:
+        recipient_email = recipient
+        title = "Ange titel"
+        body = "Ange meddelande"
+        send_email(recipient_email, title, body)
