@@ -5,7 +5,7 @@ PYTHON_PATH="$VENV_PATH/PATH/TO/PYTHON"
 PROJECT_SCRIPT_PATH="PATH/TO/SCRIPT"
 
 # Aktivera virtuella miljön 
-source "$VENV_PATH/bin/activate"
+source "$VENV_PATH/PATH/TO/ACTIVATE"
 
 # kör Python-skriptet
 "$PYTHON_PATH" "$PROJECT_SCRIPT_PATH"
