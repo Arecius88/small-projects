@@ -1,4 +1,5 @@
 *.venv
 *.env
 *.txt
+*.csv
 
