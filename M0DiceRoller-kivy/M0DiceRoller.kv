@@ -1,0 +1,57 @@
+GidLayoutMain:
+
+<GidLayoutMain>:
+    rows: 3
+    columns: 4
+
+    BoxLayout:
+        orientation: "vertical"
+        Button:
+            text: "Add Dice"
+            on_press: root.add_dice()
+        Button:
+            text: "Remove Dice"
+            on_press: root.remove_dice()
+
+
+    Button:
+        #RollButton
+        text: root.amount_of_dices_konv
+        on_press: root.roll_dices()
+
+
+    BoxLayout:
+        orientation: "vertical"
+        Label:
+            text: root.succs_konv
+        Label:
+            text: root.fails_konv
+        Label:
+            text: root.other_value_konv
+        Button:
+            #Press button
+            text: root.amount_of_dices_press_konv
+            #text: "Press"
+            on_press: root.press_dice()
+    BoxLayout:
+        Button:
+            text: "RESET"
+            on_press: root.reset_dice()
+        #Button:
+        #    text: "Check button"
+        #    on_press: root.reset_check_button()
+
+
+    Button:
+        text: '1'
+    Button:
+        text: '2'
+    Button:
+        text: '3'
+
+    Button:
+        text: '4'
+    Button:
+        text: '5'
+    Button:
+        text: '6'

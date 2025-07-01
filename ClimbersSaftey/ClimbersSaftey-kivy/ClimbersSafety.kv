@@ -1,0 +1,57 @@
+MainWidget:
+
+
+<MainWidget>:
+    orientation: "vertical"
+
+    TextInput:
+        id: belayer_input
+        width: "100dp"
+        multiline: False
+        on_text_validate: root.belayer_validate(self)
+        size_hint: .5, .25
+        pos_hint: {"center_x": .5}
+
+    Label:
+        text: "Belayers Weight: " + root.belayer_input + " kg"
+        width: "100dp"
+        size_hint: .5, .5
+        pos_hint: {"center_x": .5}
+        font_name: "fonts/Roboto-Regular.ttf"
+        font_size: "40 dp"
+
+
+    TextInput:
+        id: climber_input
+        width: "100dp"
+        multiline: False
+        on_text_validate: root.climber_validate(self)
+        size_hint: .5, .25
+        pos_hint: {"center_x": .5}
+
+
+    Label:
+        text: "Climbers Weight: " + climber_input.text + " kg"
+        width: "100dp"
+        size_hint: .5, .5
+        pos_hint: {"center_x": .5}
+        font_name: "fonts/Roboto-Regular.ttf"
+        font_size: "40 dp"
+
+
+
+    Button:
+        text: "Calculate sandbags"
+        on_press: root.cal_weight_diff()
+        size_hint: .5, .5
+        pos_hint: {"center_x": .5}
+        font_name: "fonts/Roboto-Regular.ttf"
+        font_size: "20 dp"
+
+    Label:
+        text: root.sandbags
+        font_name: "fonts/Roboto-Regular.ttf"
+        font_size: "40 dp"
+        width: "100dp"
+        pos_hint: {"center_x": .5}
+        size_hint: .5, .5
