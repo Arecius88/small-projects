@@ -34,7 +34,7 @@ if __name__ == "__main__":
     pdf_path = "/home/arecius/Documents/SynologyDrive/LinusDokument/RPG/MutantÅrNoll/Mutanten/Zonen/spelarkartor_zonkompendium.pdf"    
 
     lst_of_paths =[]
-    for i in range(1,6):
+    for i in range(0,6):
         lst_of_paths.append(f"/home/arecius/Documents/SynologyDrive/LinusDokument/RPG/MutantÅrNoll/Mutanten/Zonen/spelarkartor_zonkompendium{i}.pdf")
     
     for path_str in lst_of_paths:        
