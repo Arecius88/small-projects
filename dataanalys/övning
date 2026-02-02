@@ -1,0 +1,117 @@
+🧠 Övning 1: Intäktsanalys per stad och månad
+
+Fokus: datumhantering, vektorisering, groupby
+
+Uppgift
+
+Beräkna total intäkt per stad och månad.
+
+Regler / krav
+
+Du får inte använda apply(axis=1)
+
+Antal nätter ska beräknas vektoriserat
+
+Resultatet ska vara sorterat på högst intäkt
+
+Hint (inte lösning)
+
+Skapa kolumnerna:
+
+nätter
+
+totalpris
+
+Extrahera månad från check-in_datum
+
+Förväntat resultat
+
+En tabell ungefär som:
+
+stad        månad     total_intäkt
+Stockholm  2026-07    12345678
+Göteborg   2026-08     9876543
+
+
+Varför den är bra:
+Den här övningen avslöjar direkt om man:
+
+kan pandas-datum ordentligt
+
+tänker i kolumner istället för rader
+
+📊 Övning 2: Bokningskanaler – vad lönar sig egentligen?
+
+Fokus: kategoriska data, groupby, flera aggregat
+
+Uppgift
+
+Analysera hur olika bokningskanaler presterar.
+
+Ta fram per bokningskanal:
+
+antal bokningar
+
+genomsnittligt pris per natt
+
+genomsnittlig vistelselängd
+
+total intäkt
+
+Extra twist (valfri men rekommenderad)
+
+Konvertera relevanta kolumner till category
+
+Mät minnesanvändning före och efter
+
+Förväntat resultat
+
+En jämförelsetabell där du tydligt kan se t.ex.:
+
+Företagsavtal → längre vistelser
+
+OTA → fler men kortare bokningar
+
+Varför den är bra:
+Detta är exakt den typ av analys som görs på riktigt – och groupby().agg() är lätt att skriva dåligt.
+
+🏨 Övning 3: Vilka hotell är “dyra” – på riktigt?
+
+Fokus: normalisering, ranking, effektiv filtrering
+
+Uppgift
+
+Identifiera hotell som:
+
+har högre genomsnittspris än stadens snitt
+
+OCH minst 500 bokningar
+
+Regler / krav
+
+Inga Python-loopar
+
+Inga apply
+
+Använd merge eller transform korrekt
+
+Hint
+
+Räkna stadens snittpris
+
+Jämför varje hotell mot sitt stads-snitts pris
+
+Filtrera på antal bokningar
+
+Förväntat resultat
+
+En lista som svarar på:
+
+“Vilka hotell tar mer betalt än konkurrenterna i samma stad – och kommer undan med det?”
+
+Varför den är bra:
+Detta är en klassisk “svår men vanlig” analys:
+
+kräver rätt tänk kring gruppjämförelser
+
+avslöjar snabbt om man verkligen förstår pandas
