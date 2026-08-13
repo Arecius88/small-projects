@@ -27,4 +27,3 @@ Spetsa hjärnan och hoppas att turen är på din sida när du tar dig an utmanin
 
 Lycka Till!
 
-"""
