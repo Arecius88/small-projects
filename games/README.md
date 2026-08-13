@@ -1,6 +1,6 @@
 Detta project var slutprovet på en högskolekurs i Pythonprogrammering som gavs av Högskolan i Gävle. 
 
-===========
+
 ZombieHuset
 ===========
 
