@@ -1,39 +1,44 @@
 """
-Build a yearly analysis report from configurable Excel input files.
+Example script for yearly KPI analysis.
 
-The script reads two Excel files:
+Workflow:
 
-1. A file containing yearly care day values.
-2. A file containing contact values by date.
-
-It then calculates:
-
-- Total care days per year.
-- Total contacts per year.
-- Average care days per contact.
-- Improvement between a baseline year and a comparison year.
-- A text report written to disk.
-
-All file paths, column names, filter values, report text, and analysis years
-are configured in config.py.
-
-This file is designed to be safe to publish publicly. Do not hard-code
-sensitive paths, names, internal report titles, or confidential column names
-in this file.
+1. Load source data.
+2. Calculate yearly statistics.
+3. Compare years.
+4. Generate a report.
+5. Write report and logs.
 """
 
-from __future__ import annotations
 from dataclasses import dataclass
 from io import StringIO
 from pathlib import Path
 import logging
 import warnings
+
 import pandas as pd
 from tabulate import tabulate
-import config
 
+from config import (
+    INPUT_FILE_1,
+    INPUT_FILE_2,
+    REPORT_FILE,
+    LOG_FILE,
+    COL_YEAR,
+    COL_METRIC_1,
+    COL_METRIC_2,
+    COL_FLAG,
+    COL_DATE,
+    FLAG_VALUE,
+    REPORT_TITLE,
+    REPORT_SOURCE_INFORMATION,
+    START_YEAR,
+    END_YEAR,
+    BASELINE_YEAR,
+    COMPARISON_YEAR,
+    DEBUG_MODE,
+)
 
-# Suppress openpyxl warnings that may occur when reading exported Excel files.
 warnings.filterwarnings(
     "ignore",
     message="Workbook contains no default style",
@@ -42,38 +47,39 @@ warnings.filterwarnings(
 
 def configure_logger() -> logging.Logger:
     """
-    Configure and return the application logger.
-
-    The logger writes:
-        - DEBUG and higher messages to the log file.
-        - INFO and higher messages to the console.
+    Configure application logging.
 
     Returns:
-        A configured logging.Logger instance.
+        Configured logger instance.
     """
-    config.LOG_FILE.parent.mkdir(
+
+    LOG_FILE.parent.mkdir(
         parents=True,
         exist_ok=True,
     )
 
     logger = logging.getLogger(__name__)
-    logger.setLevel(logging.DEBUG if config.DEBUG_MODE else logging.INFO)
 
-    # Prevent duplicate log messages if the module is reloaded.
+    logger.setLevel(
+        logging.DEBUG if DEBUG_MODE else logging.INFO
+    )
+
     logger.handlers.clear()
 
     file_handler = logging.FileHandler(
-        config.LOG_FILE,
+        LOG_FILE,
         encoding="utf-8",
     )
+
     file_handler.setLevel(logging.DEBUG)
 
     console_handler = logging.StreamHandler()
+
     console_handler.setLevel(logging.INFO)
 
     formatter = logging.Formatter(
         "%(asctime)s | %(levelname)-8s | "
-        "%(filename)s:%(lineno)d | %(funcName)s | %(message)s"
+        "%(funcName)s | %(message)s"
     )
 
     file_handler.setFormatter(formatter)
@@ -91,279 +97,52 @@ logger = configure_logger()
 @dataclass(frozen=True)
 class YearResult:
     """
-    Store calculated statistics for one year.
+    Statistics for one year.
 
     Attributes:
-        care_days:
-            Total number of care days.
-        contacts:
-            Total number of contacts.
+        metric_1:
+            First calculated metric.
+
+        metric_2:
+            Second calculated metric.
+
         average:
-            Average number of care days per contact.
+            Calculated average value.
     """
 
-    care_days: int
-    contacts: int
+    metric_1: int
+    metric_2: int
     average: float
 
 
-def load_excel_file(file_path: Path) -> pd.DataFrame:
+def load_dataframe(path: Path) -> pd.DataFrame:
     """
-    Load an Excel file into a pandas DataFrame.
+    Load an Excel file into a DataFrame.
 
     Args:
-        file_path:
-            Path to the Excel file.
+        path:
+            Path to Excel file.
 
     Returns:
-        A pandas DataFrame containing the Excel data.
-
-    Raises:
-        FileNotFoundError:
-            If the file does not exist.
+        Loaded DataFrame.
     """
-    if not file_path.exists():
-        raise FileNotFoundError(f"Input file not found: {file_path}")
-
-    logger.info("Loading Excel file: %s", file_path)
-
-    df = pd.read_excel(file_path)
-
-    logger.debug(
-        "Loaded file=%s shape=%s columns=%s",
-        file_path,
-        df.shape,
-        list(df.columns),
-    )
-
-    return df
+    return pd.read_excel(path)
 
 
 def load_data() -> tuple[pd.DataFrame, pd.DataFrame]:
     """
-    Load all source data files.
+    Load source datasets.
 
     Returns:
-        A tuple containing:
-            - DataFrame with care day data.
-            - DataFrame with contact data.
+        Two pandas DataFrames.
     """
-    care_days_df = load_excel_file(config.CARE_DAYS_INPUT_FILE)
-    contacts_df = load_excel_file(config.CONTACTS_INPUT_FILE)
 
-    return care_days_df, contacts_df
+    logger.info("Loading data")
 
-
-def validate_required_columns(
-    df: pd.DataFrame,
-    required_columns: list[str],
-    dataframe_name: str,
-) -> None:
-    """
-    Validate that a DataFrame contains all required columns.
-
-    Args:
-        df:
-            DataFrame to validate.
-        required_columns:
-            Column names that must exist in the DataFrame.
-        dataframe_name:
-            Human-readable name used in error messages.
-
-    Raises:
-        ValueError:
-            If one or more required columns are missing.
-    """
-    missing_columns = [
-        column
-        for column in required_columns
-        if column not in df.columns
-    ]
-
-    if missing_columns:
-        raise ValueError(
-            f"{dataframe_name} is missing required columns: "
-            f"{missing_columns}"
-        )
-
-    logger.debug(
-        "%s contains all required columns: %s",
-        dataframe_name,
-        required_columns,
+    return (
+        load_dataframe(INPUT_FILE_1),
+        load_dataframe(INPUT_FILE_2),
     )
-
-
-def validate_input_data(
-    care_days_df: pd.DataFrame,
-    contacts_df: pd.DataFrame,
-) -> None:
-    """
-    Validate that the input DataFrames contain required columns.
-
-    Args:
-        care_days_df:
-            DataFrame with care day data.
-        contacts_df:
-            DataFrame with contact data.
-    """
-    validate_required_columns(
-        df=care_days_df,
-        required_columns=[
-            config.COLUMN_GROUP,
-            config.COLUMN_YEAR,
-            config.COLUMN_CARE_DAYS,
-        ],
-        dataframe_name="care_days_df",
-    )
-
-    validate_required_columns(
-        df=contacts_df,
-        required_columns=[
-            config.COLUMN_CONTACTS,
-            config.COLUMN_CONTACT_DATE,
-            config.COLUMN_CONTACT_STATUS,
-        ],
-        dataframe_name="contacts_df",
-    )
-
-
-def normalize_date_columns(
-    care_days_df: pd.DataFrame,
-    contacts_df: pd.DataFrame,
-) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """
-    Convert configured date columns to pandas datetime.
-
-    Args:
-        care_days_df:
-            DataFrame with care day data.
-        contacts_df:
-            DataFrame with contact data.
-
-    Returns:
-        A tuple with normalized copies of the input DataFrames.
-    """
-    care_days_df = care_days_df.copy()
-    contacts_df = contacts_df.copy()
-
-    if config.CARE_DAYS_YEAR_IS_DATE:
-        care_days_df[config.COLUMN_YEAR] = pd.to_datetime(
-            care_days_df[config.COLUMN_YEAR],
-            errors="coerce",
-        )
-
-    contacts_df[config.COLUMN_CONTACT_DATE] = pd.to_datetime(
-        contacts_df[config.COLUMN_CONTACT_DATE],
-        errors="coerce",
-    )
-
-    logger.debug(
-        "Normalized date columns. care_days_year_dtype=%s "
-        "contact_date_dtype=%s",
-        care_days_df[config.COLUMN_YEAR].dtype,
-        contacts_df[config.COLUMN_CONTACT_DATE].dtype,
-    )
-
-    return care_days_df, contacts_df
-
-
-def filter_care_days(
-    df: pd.DataFrame,
-    year: str,
-) -> int:
-    """
-    Sum care days for a specific year.
-
-    If config.CARE_DAYS_YEAR_IS_DATE is True, the configured year column is
-    expected to contain datetime values such as 2024-01-01.
-
-    If config.CARE_DAYS_YEAR_IS_DATE is False, the configured year column is
-    expected to contain values such as 2024 or "2024".
-
-    Only rows where the configured group column is not empty are included.
-
-    Args:
-        df:
-            DataFrame containing care day data.
-        year:
-            Year to filter on, for example "2024".
-
-    Returns:
-        Total number of care days for the selected year.
-    """
-    valid_group_mask = (
-        df[config.COLUMN_GROUP].notna()
-        & (df[config.COLUMN_GROUP].astype(str).str.strip() != "")
-    )
-
-    if config.CARE_DAYS_YEAR_IS_DATE:
-        year_value = pd.Timestamp(
-            year=int(year),
-            month=1,
-            day=1,
-        )
-        year_mask = df[config.COLUMN_YEAR] == year_value
-    else:
-        year_mask = df[config.COLUMN_YEAR].astype(str) == str(year)
-
-    care_days = int(
-        df.loc[
-            valid_group_mask & year_mask,
-            config.COLUMN_CARE_DAYS,
-        ].sum()
-    )
-
-    logger.debug(
-        "Filtered care days: year=%s care_days=%s",
-        year,
-        care_days,
-    )
-
-    return care_days
-
-
-def filter_contacts(
-    df: pd.DataFrame,
-    start_date: str,
-    end_date: str,
-) -> int:
-    """
-    Sum contacts within a date interval.
-
-    Only rows where the configured contact status column equals the configured
-    included value are included.
-
-    Args:
-        df:
-            DataFrame containing contact data.
-        start_date:
-            Start date for the period, for example "2024-01-01".
-        end_date:
-            End date for the period, for example "2024-12-31".
-
-    Returns:
-        Total number of contacts within the selected period.
-    """
-    start_timestamp = pd.Timestamp(start_date)
-    end_timestamp = pd.Timestamp(end_date)
-
-    filtered = df.loc[
-        (df[config.COLUMN_CONTACT_STATUS]
-         == config.CONTACT_STATUS_INCLUDED_VALUE)
-        & (df[config.COLUMN_CONTACT_DATE] >= start_timestamp)
-        & (df[config.COLUMN_CONTACT_DATE] <= end_timestamp)
-    ]
-
-    contacts = int(filtered[config.COLUMN_CONTACTS].sum())
-
-    logger.debug(
-        "Filtered contacts: start_date=%s end_date=%s contacts=%s",
-        start_date,
-        end_date,
-        contacts,
-    )
-
-    return contacts
 
 
 def create_year_periods(
@@ -371,174 +150,246 @@ def create_year_periods(
     end_year: int,
 ) -> list[tuple[str, str, str]]:
     """
-    Create yearly date periods between two years.
-
-    Example:
-        create_year_periods(2024, 2025)
-
-    Returns:
-        [
-            ("2024", "2024-01-01", "2024-12-31"),
-            ("2025", "2025-01-01", "2025-12-31"),
-        ]
+    Generate yearly periods.
 
     Args:
         start_year:
-            First year to include.
+            First year.
+
         end_year:
-            Last year to include.
+            Last year.
 
     Returns:
-        A list of tuples with year, start date, and end date.
+        List of yearly date ranges.
     """
-    if end_year < start_year:
-        raise ValueError("end_year must be greater than or equal to start_year.")
 
-    year_periods = [
+    return [
         (
             str(year),
             f"{year}-01-01",
             f"{year}-12-31",
         )
-        for year in range(start_year, end_year + 1)
+        for year in range(
+            start_year,
+            end_year + 1,
+        )
     ]
 
-    logger.debug("Created year periods=%s", year_periods)
 
-    return year_periods
+def calculate_metric_1(
+    df: pd.DataFrame,
+    year: str,
+) -> int:
+    """
+    Calculate metric 1 for a year.
+    """
+
+    year_date = pd.Timestamp(
+        year=int(year),
+        month=1,
+        day=1,
+    )
+
+    return int(
+        df.loc[
+            df[COL_YEAR] == year_date,
+            COL_METRIC_1,
+        ].sum()
+    )
+
+
+def calculate_metric_2(
+    df: pd.DataFrame,
+    start_date: str,
+    end_date: str,
+) -> int:
+    """
+    Calculate metric 2 for a date interval.
+    """
+
+    filtered = df.loc[
+        (df[COL_FLAG] == FLAG_VALUE)
+        & (df[COL_DATE] >= start_date)
+        & (df[COL_DATE] <= end_date)
+    ]
+
+    return int(filtered[COL_METRIC_2].sum())
 
 
 def calculate_year_result(
     year: str,
     start_date: str,
     end_date: str,
-    care_days_df: pd.DataFrame,
-    contacts_df: pd.DataFrame,
+    df_1: pd.DataFrame,
+    df_2: pd.DataFrame,
 ) -> YearResult:
     """
-    Calculate yearly statistics.
-
-    The function calculates:
-        - Total care days.
-        - Total contacts.
-        - Average care days per contact.
-
-    Args:
-        year:
-            Year to calculate, for example "2024".
-        start_date:
-            First date in the calculation period.
-        end_date:
-            Last date in the calculation period.
-        care_days_df:
-            DataFrame containing care day data.
-        contacts_df:
-            DataFrame containing contact data.
-
-    Returns:
-        A YearResult instance with calculated values.
+    Calculate annual statistics.
     """
-    care_days = filter_care_days(
-        df=care_days_df,
-        year=year,
-    )
 
-    contacts = filter_contacts(
-        df=contacts_df,
-        start_date=start_date,
-        end_date=end_date,
-    )
-
-    average = care_days / contacts if contacts else 0.0
-
-    logger.debug(
-        "Calculated yearly result: year=%s care_days=%s contacts=%s "
-        "average=%.4f",
+    metric_1 = calculate_metric_1(
+        df_1,
         year,
-        care_days,
-        contacts,
-        average,
     )
+
+    metric_2 = calculate_metric_2(
+        df_2,
+        start_date,
+        end_date,
+    )
+
+    average = metric_1 / metric_2 if metric_2 else 0
 
     return YearResult(
-        care_days=care_days,
-        contacts=contacts,
-        average=round(average, 4),
+        metric_1=metric_1,
+        metric_2=metric_2,
+        average=average,
     )
 
 
 def calculate_improvement(
     baseline: YearResult,
     comparison: YearResult,
-) -> dict[str, float | int]:
+) -> dict[str, float]:
     """
-    Calculate improvement metrics between two yearly results.
-
-    The function calculates:
-        - Difference in average care days per contact.
-        - Improvement percentage.
-        - Estimated freed care days based on average difference.
-        - Actual difference in total care days.
-
-    Args:
-        baseline:
-            YearResult used as the baseline year.
-        comparison:
-            YearResult used as the comparison year.
-
-    Returns:
-        A dictionary containing calculated improvement values.
-
-    Raises:
-        ZeroDivisionError:
-            If baseline.average is zero.
+    Calculate improvement between two years.
     """
-    logger.info("Calculating improvement")
 
-    if baseline.average == 0:
-        raise ZeroDivisionError(
-            "Cannot calculate improvement percentage because "
-            "baseline average is zero."
-        )
+    difference = (
+        baseline.average -
+        comparison.average
+    )
 
-    difference = baseline.average - comparison.average
-    improvement_percent = difference / baseline.average * 100
-    estimated_freed_days = difference * comparison.contacts
-    actual_freed_days = baseline.care_days - comparison.care_days
+    improvement_percent = (
+        difference /
+        baseline.average *
+        100
+    )
 
-    result = {
+    return {
         "difference": difference,
         "improvement_percent": improvement_percent,
-        "estimated_freed_days": estimated_freed_days,
-        "actual_freed_days": actual_freed_days,
     }
 
-    logger.debug("Improvement result=%s", result)
 
-    return result
-
-
-def build_table(
+def build_report(
     results: dict[str, YearResult],
-) -> list[list[object]]:
+) -> str:
     """
-    Build table data for the report.
-
-    Args:
-        results:
-            Dictionary where keys are years and values are YearResult objects.
+    Build a text report.
 
     Returns:
-        A list of table rows used by tabulate.
+        Complete report text.
     """
-    table_data = []
 
-    for year, data in results.items():
-        table_data.append(
-            [
-                year,
-                data.care_days,
-                data.contacts,
-                f"{data.average:.2f}",
-                "CareDays / Contacts",
-            ]
+    report = StringIO()
+
+    headers = [
+        "Year",
+        "Metric 1",
+        "Metric 2",
+        "Average",
+    ]
+
+    table = [
+        [
+            year,
+            result.metric_1,
+            result.metric_2,
+            round(result.average, 2),
+        ]
+        for year, result in results.items()
+    ]
+
+    report.write(
+        f"{REPORT_TITLE}\n\n"
+    )
+
+    report.write(
+        tabulate(
+            table,
+            headers=headers,
+            tablefmt="github",
+        )
+    )
+
+    report.write("\n\n")
+
+    improvement = calculate_improvement(
+        results[BASELINE_YEAR],
+        results[COMPARISON_YEAR],
+    )
+
+    report.write(
+        f"Difference: "
+        f"{improvement['difference']:.2f}\n"
+    )
+
+    report.write(
+        f"Improvement: "
+        f"{improvement['improvement_percent']:.2f}%\n"
+    )
+
+    report.write(
+        f"\n{REPORT_SOURCE_INFORMATION}"
+    )
+
+    return report.getvalue()
+
+
+def write_report(
+    report: str,
+    output_file: Path,
+) -> None:
+    """
+    Write report to disk.
+    """
+
+    output_file.parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    output_file.write_text(
+        report,
+        encoding="utf-8",
+    )
+
+
+def main() -> None:
+    """
+    Execute application workflow.
+    """
+
+    logger.info("Starting application")
+
+    df_1, df_2 = load_data()
+
+    periods = create_year_periods(
+        START_YEAR,
+        END_YEAR,
+    )
+
+    results: dict[str, YearResult] = {}
+
+    for year, start_date, end_date in periods:
+        results[year] = calculate_year_result(
+            year,
+            start_date,
+            end_date,
+            df_1,
+            df_2,
+        )
+
+    report = build_report(results)
+
+    write_report(
+        report,
+        REPORT_FILE,
+    )
+
+    logger.info("Finished application")
+
+
+if __name__ == "__main__":
+    main()
