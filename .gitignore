@@ -3,11 +3,12 @@ __pycache__/
 *.py[cod]
 .venv/
 venv/
+!.gitkeep
 
 # Data
-data/input/
-data/output/
-data/logs/
+data/input/*
+data/output/*
+data/logs/*
 
 # Excel files
 *.xlsx
@@ -22,3 +23,10 @@ data/logs/
 Thumbs.db
 .idea/
 .vscode/
+
+.venv/
+.idea/
+__pycache__/
+
+
+
