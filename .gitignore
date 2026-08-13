@@ -1,5 +1,24 @@
-*.venv
-*.env
-*.txt
-*.csv
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Data
+data/input/
+data/output/
+data/logs/
+
+# Excel files
 *.xlsx
+*.xls
+*.xlsm
+
+# Logs
+*.log
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
